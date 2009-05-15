@@ -1,12 +1,17 @@
 module Statistics
-  def self.included(base)
-    base.extend(HasStats)
-  end
+  class << self
+    def included(base)
+      base.extend(HasStats)
+    end    
 
-  # This extension provides the ability to 
+    def default_filters(filters)
+      ActiveRecord::Base.instance_eval { @filter_all_on = filters }
+    end
+  end  
+
+  # This extension provides the ability to define statistics for reporting purposes
   module HasStats
 
-    
     SUPPORTED_CALCULATIONS = [:average, :count, :maximum, :minimum, :sum]
     
     # OPTIONS:
@@ -37,7 +42,7 @@ module Statistics
       method_name = name.gsub(" ", "").underscore + "_stat"
       
       @statistics ||= {}
-      @filter_all_on ||= {}
+      @filter_all_on ||= ActiveRecord::Base.instance_eval { @filter_all_on }
       @statistics[name] = method_name
       
       options = { :column_name => :id }.merge(options)
@@ -52,6 +57,7 @@ module Statistics
           filters.each do |key, value|
             if value
               sql = (@filter_all_on.merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
+              sql = sql.gsub("%t", "#{table_name}")
               sql_frag = ActiveRecord::Base.send(:sanitize_sql_for_conditions, sql)
               case 
                 when sql_frag.nil? : nil
@@ -139,7 +145,7 @@ module Statistics
       @filter_all_on ||= {}
       @filter_all_on[name] = cond
     end
-    
+
     private
 
     def defined_stats(name)

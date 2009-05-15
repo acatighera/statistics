@@ -1,0 +1,7 @@
+*~
+*.swp
+*.swo
+.DS_Store
+debug.log
+coverage
+coverage.data
