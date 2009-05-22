@@ -6,26 +6,26 @@ This ActiverRecord plugin allows you to easily define and pull statistics for AR
 script/plugin install git://github.com/acatighera/statistics.git
 
 ## Examples
-### Defining statistics is similar to defining named scopes:
+#### Defining statistics is similar to defining named scopes:
 
     class Account < ActiveRecord::Base
       define_statistic "Basic Count", :count => :all
       define_statistic "Basic Sum", :sum => :all, :column_name => 'amount'
     end
 
-### Actually pulling the numbers is simple:
+#### Actually pulling the numbers is simple:
 
-for all stats
+#####for all stats
 
     Account.statistics
 
-for a single stat
+#####for a single stat
 
     Account.get_stat(‘Basic Count’)
 
 ### Here are some additional benefits of using this plugin:
 
-* Easily Filter
+#### Easily Filter
 
 Note: I found filtering to be an important part of reporting (ie. filtering by date). All filters are optional so even if you define them you don’t have to use them when pulling data. Using the `filter_all_stats_on` method and `:joins` options you can make things filterable by the same things which I found to be extremely useful.
 
@@ -38,7 +38,7 @@ Note: I found filtering to be an important part of reporting (ie. filtering by d
     Account.statistics(:user_id => 5)
     Account.get_stat(‘Custom Count’,  :user_id => 5,  :start_date => ‘2009-01-01’)
 
-* Standardized
+#### Standardized
 
 All ActiveRecord classes now respond to `statistics` and `get_stat` methods
 
@@ -49,7 +49,7 @@ All ActiveRecord classes now respond to `statistics` and `get_stat` methods
 
     Account.get_stat(“Basic Count’)
 
-* Calculated statistics (DRY)
+#### Calculated statistics (DRY)
 
 You can define calculated metrics in order to perform mathematical calculations on one or more defined statistics. (These calculated metrics also work with filters!) 
 
@@ -61,7 +61,7 @@ You can define calculated metrics in order to perform mathematical calculations 
       end
     end
 
-* Reuse scopes you already have defined
+#### Reuse scopes you already have defined
 
 You can reuse the code you have written to do reporting.
 
@@ -71,7 +71,7 @@ You can reuse the code you have written to do reporting.
       define_statistic "Chained Scope Count", :count => [:scope1, :scope2]
     end
 
-* Accepts all ActiveRecord::Calculations options
+#### Accepts all ActiveRecord::Calculations options
 
 The `:conditions` and `:joins` options are all particularly useful
 
