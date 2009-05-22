@@ -32,7 +32,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:chained_scope_count_stat).returns(4)
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
-    MockModel.expects(:average_stat).returns(54)
+    MockModel.expects(:total_amount_stat).returns(54)
      
     assert_equal(["Basic Count",
                   "Basic Sum",
@@ -76,17 +76,17 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:basic_count_stat).returns(3)
     MockModel.expects(:basic_sum_stat).returns(33)
 
-    assert_equal 99, MockModel.average_stat({})
+    assert_equal 99, MockModel.total_amount_stat({})
 
     MockModel.expects(:basic_count_stat).with(:user_id => 5).returns(2)
     MockModel.expects(:basic_sum_stat).with(:user_id => 5).returns(25)
 
-    assert_equal 50, MockModel.average_stat({:user_id => 5})
+    assert_equal 50, MockModel.total_amount_stat({:user_id => 5})
 
     MockModel.expects(:basic_count_stat).with(:user_id => 6).returns(3)
     MockModel.expects(:basic_sum_stat).with(:user_id => 6).returns(60)
 
-    assert_equal 20, MockModel.average_stat({:user_id => 6})
+    assert_equal 180, MockModel.total_amount_stat({:user_id => 6})
   end
 
   def test_default_filter_stat
