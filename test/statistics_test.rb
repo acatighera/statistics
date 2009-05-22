@@ -19,8 +19,8 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
 
-    define_calculated_statistic "Average" do
-      defined_stats('Basic Sum')/defined_stats('Basic Count')
+    define_calculated_statistic "Total Amount" do
+      defined_stats('Basic Sum') * defined_stats('Basic Count')
     end
 
     filter_all_stats_on(:user_id, "user_id = ?")
@@ -28,25 +28,25 @@ class StatisticsTest < Test::Unit::TestCase
 
   def test_statistics
     MockModel.expects(:basic_count_stat).returns(2)
-    MockModel.expects(:basic_sum_stat).returns(54)
+    MockModel.expects(:basic_sum_stat).returns(27)
     MockModel.expects(:chained_scope_count_stat).returns(4)
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
-    MockModel.expects(:average_stat).returns(27)
+    MockModel.expects(:average_stat).returns(54)
      
     assert_equal(["Basic Count",
                   "Basic Sum",
                   "Chained Scope Count",
                   "Default Filter",
                   "Custom Filter",
-                  "Average"].sort, MockModel.statistics_keys.sort)
+                  "Total Amount"].sort, MockModel.statistics_keys.sort)
 
     assert_equal({ "Basic Count" => 2,
-                   "Basic Sum" => 54,
+                   "Basic Sum" => 27,
                    "Chained Scope Count" => 4,
                    "Default Filter" => 5,
                    "Custom Filter" => 3,
-                   "Average" => 27 }, MockModel.statistics)
+                   "Total Amount" => 54 }, MockModel.statistics)
   end
 
   def test_get_stat
@@ -74,14 +74,14 @@ class StatisticsTest < Test::Unit::TestCase
 
   def test_calculated_stat
     MockModel.expects(:basic_count_stat).returns(3)
-    MockModel.expects(:basic_sum_stat).returns(99)
+    MockModel.expects(:basic_sum_stat).returns(33)
 
-    assert_equal 33, MockModel.average_stat({})
+    assert_equal 99, MockModel.average_stat({})
 
     MockModel.expects(:basic_count_stat).with(:user_id => 5).returns(2)
-    MockModel.expects(:basic_sum_stat).with(:user_id => 5).returns(50)
+    MockModel.expects(:basic_sum_stat).with(:user_id => 5).returns(25)
 
-    assert_equal 25, MockModel.average_stat({:user_id => 5})
+    assert_equal 50, MockModel.average_stat({:user_id => 5})
 
     MockModel.expects(:basic_count_stat).with(:user_id => 6).returns(3)
     MockModel.expects(:basic_sum_stat).with(:user_id => 6).returns(60)
