@@ -7,10 +7,11 @@ module Statistics
     def default_filters(filters)
       ActiveRecord::Base.instance_eval { @filter_all_on = filters }
     end
+
+    def supported_calculations
+      [:average, :count, :maximum, :minimum, :sum]  
+    end
   end  
-  
-  SUPPORTED_CALCULATIONS = [:average, :count, :maximum, :minimum, :sum]
-  
 
   # This extension provides the ability to define statistics for reporting purposes
   module HasStats
@@ -48,7 +49,7 @@ module Statistics
       
       options = { :column_name => :id }.merge(options)
 
-      calculation = options.keys.find {|opt| SUPPORTED_CALCULATIONS.include?(opt)}
+      calculation = options.keys.find {|opt| Statistics::supported_calculations.include?(opt)}
       calculation ||= :count
       
       # We must use the metaclass here to metaprogrammatically define a class method
@@ -154,7 +155,7 @@ module Statistics
     end
 
     def sql_options(options)
-      SUPPORTED_CALCULATIONS.each do |deletable|
+      Statistics::supported_calculations.each do |deletable|
         options.delete(deletable)
       end
       options.delete(:column_name)
