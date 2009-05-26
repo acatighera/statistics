@@ -8,12 +8,13 @@ module Statistics
       ActiveRecord::Base.instance_eval { @filter_all_on = filters }
     end
   end  
+  
+  SUPPORTED_CALCULATIONS = [:average, :count, :maximum, :minimum, :sum]
+  
 
   # This extension provides the ability to define statistics for reporting purposes
   module HasStats
 
-    SUPPORTED_CALCULATIONS = [:average, :count, :maximum, :minimum, :sum]
-    
     # OPTIONS:
     #
     #* +average+, +count+, +sum+, +maximum+, +minimum+ - Only one of these keys is passed, which 
