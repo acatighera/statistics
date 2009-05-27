@@ -14,6 +14,7 @@ class StatisticsTest < Test::Unit::TestCase
   
   class MockModel < ActiveRecord::Base
     define_statistic "Basic Count", :count => :all
+    define_statistic :symbol_count, :count => :all
     define_statistic "Basic Sum", :sum => :all, :column_name => 'amount'
     define_statistic "Chained Scope Count", :count => [:all, :named_scope]
     define_statistic "Default Filter", :count => :all
@@ -28,20 +29,25 @@ class StatisticsTest < Test::Unit::TestCase
 
   def test_statistics
     MockModel.expects(:basic_count_stat).returns(2)
+    MockModel.expects(:symbol_count_stat).returns(2)
     MockModel.expects(:basic_sum_stat).returns(27)
     MockModel.expects(:chained_scope_count_stat).returns(4)
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
     MockModel.expects(:total_amount_stat).returns(54)
      
-    assert_equal(["Basic Count",
-                  "Basic Sum",
-                  "Chained Scope Count",
-                  "Default Filter",
-                  "Custom Filter",
-                  "Total Amount"].sort, MockModel.statistics_keys.sort)
+    ["Basic Count",
+    :symbol_count,
+    "Basic Sum",
+    "Chained Scope Count",
+    "Default Filter",
+    "Custom Filter",
+    "Total Amount"].each do |key|
+      assert MockModel.statistics_keys.include?(key)
+    end
 
     assert_equal({ "Basic Count" => 2,
+                   :symbol_count => 2,
                    "Basic Sum" => 27,
                    "Chained Scope Count" => 4,
                    "Default Filter" => 5,

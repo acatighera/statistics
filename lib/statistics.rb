@@ -41,7 +41,7 @@ module Statistics
     #    define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?' }
     #  end
     def define_statistic(name, options)
-      method_name = name.gsub(" ", "").underscore + "_stat"
+      method_name = name.to_s.gsub(" ", "").underscore + "_stat"
       
       @statistics ||= {}
       @filter_all_on ||= ActiveRecord::Base.instance_eval { @filter_all_on }
@@ -91,7 +91,7 @@ module Statistics
     #     defined_stats('Basic Sum') * defined_stats('Basic Count')
     #   end
     def define_calculated_statistic(name, &block)
-      method_name = name.gsub(" ", "").underscore + "_stat"
+      method_name = name.to_s.gsub(" ", "").underscore + "_stat"
 
       @statistics ||= {}
       @statistics[name] = method_name
