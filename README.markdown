@@ -43,6 +43,9 @@ Note: I found filtering to be an important part of reporting (ie. filtering by d
 
     Account.statistics(:account_type => 'non-admin')
     Account.get_stat(:user_count,  :account_type => 'non-admin',  :created_after => ‘2009-01-01’, :state => 'NY')
+    
+    # NOTE: filters are optional (ie. no filters will be applied if none are passed in)
+    Account.get_stat(:user_count)
 
 #### Standardized
 
