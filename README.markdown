@@ -6,12 +6,12 @@ This ActiverRecord plugin allows you to easily define and pull statistics for AR
     script/plugin install git://github.com/acatighera/statistics.git
 
 ## Examples
-#### Defining statistics is similar to defining named scopes:
+#### Defining statistics is similar to defining named scopes. Strings and symbols both work as names.
 
     class Account < ActiveRecord::Base
       define_statistic :user_count, :count => :all
       define_statistic :average_age, :average => :all, :column_name => 'age'
-      define_statistic :subscriber_count, :count => :all, :conditions => "subscription_opt_in = 1"
+      define_statistic 'subscriber count', :count => :all, :conditions => "subscription_opt_in = 1"
     end
     
     class Donations < ActiveRecord::Base
@@ -22,7 +22,7 @@ This ActiverRecord plugin allows you to easily define and pull statistics for AR
 
 #####for all stats
 
-    Account.statistics                   # returns { :user_count => 120, :average_age => 28, :subscriber_count => 74 }
+    Account.statistics                   # returns { :user_count => 120, :average_age => 28, 'subscriber count' => 74 }
 
 #####for a single stat
 
