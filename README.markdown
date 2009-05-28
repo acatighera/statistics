@@ -26,7 +26,7 @@ This ActiverRecord plugin allows you to easily define and pull statistics for AR
 
 #####for a single stat
 
-    Account.get_stat(‘:user_count’)      # returns 120
+    Account.get_stat(:user_count)      # returns 120
 
 ### Here are some additional benefits of using this plugin:
 
