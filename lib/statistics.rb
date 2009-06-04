@@ -58,7 +58,7 @@ module Statistics
           scoped_options = options.dclone
           filters.each do |key, value|
             if value
-              sql = (@filter_all_on.merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
+              sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
               sql = sql.gsub("%t", "#{table_name}")
               sql_frag = ActiveRecord::Base.send(:sanitize_sql_for_conditions, sql)
               case 

@@ -12,6 +12,10 @@ ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :dbfile => ":memo
 
 class StatisticsTest < Test::Unit::TestCase
   
+  class BasicModel < ActiveRecord::Base
+    define_statistic :basic_num, :count => :all
+  end
+  
   class MockModel < ActiveRecord::Base
     define_statistic "Basic Count", :count => :all
     define_statistic :symbol_count, :count => :all
@@ -25,6 +29,11 @@ class StatisticsTest < Test::Unit::TestCase
     end
 
     filter_all_stats_on(:user_id, "user_id = ?")
+  end
+
+  def test_basic
+    BasicModel.expects(:basic_num_stat).returns(1)
+    assert_equal({ :basic_num => 1 }, BasicModel.statistics)
   end
 
   def test_statistics
