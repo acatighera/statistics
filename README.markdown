@@ -35,7 +35,7 @@ This ActiverRecord plugin allows you to easily define and pull statistics for AR
 Note: I found filtering to be an important part of reporting (ie. filtering by date). All filters are optional so even if you define them you don’t have to use them when pulling data. Using the `filter_all_stats_on` method and `:joins` options you can make things filterable by the same things which I found to be extremely useful.
 
     class Account < ActiveRecord::Base
-      define_statistic :user_count, :count => :all, , :filter_on => { :state => 'state = ?', :created_after => 'DATE(created_at) > ?'}
+      define_statistic :user_count, :count => :all, :filter_on => { :state => 'state = ?', :created_after => 'DATE(created_at) > ?'}
       define_statistic :subscriber_count, :count => :all, :conditions => "subscription_opt_in = true"
       
       filter_all_stats_on(:account_type, "account_type = ?")
