@@ -60,7 +60,7 @@ module Statistics
             if value
               sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
               sql = sql.gsub("%t", "#{table_name}")
-              sql_frag = ActiveRecord::Base.send(:sanitize_sql_for_conditions, sql)
+              sql_frag = send(:sanitize_sql_for_conditions, sql)
               case 
                 when sql_frag.nil? : nil
                 when scoped_options[:conditions].nil? : scoped_options[:conditions] = sql_frag
