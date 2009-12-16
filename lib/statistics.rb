@@ -176,5 +176,6 @@ module Statistics
       options
     end
   end
-    
 end
+
+ActiveRecord::Base.send(:include, Statistics)

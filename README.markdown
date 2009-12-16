@@ -3,6 +3,8 @@
 This ActiverRecord plugin allows you to easily define and pull statistics for AR models. This plugin was built with reporting in mind.
 
 ## Installation
+    gem install statistics
+OR
     script/plugin install git://github.com/acatighera/statistics.git
 
 ## Examples
@@ -59,6 +61,8 @@ This is a new feature that uses `Rails.cache`. You can cache certain statistics 
     Account.statistics(:state => 'NY') # This call and subsequent calls for the next 30 minutes will use the cached value
     
     Account.statistics(:state => 'PA') # This call generates a SQL query because the user count for NY and PA could be different (and probably is)
+
+Note: If you want Rails.cache to work properly, you need to use mem_cache_store in your rails enviroment file (ie. `config.cache_store = :mem_cache_store` in your enviroment.rb file).
 
 #### Standardized
 
