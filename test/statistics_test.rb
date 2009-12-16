@@ -4,11 +4,18 @@ require 'rubygems'
 gem 'activerecord', '>= 1.15.4.7794'
 gem 'mocha', '>= 0.9.0'
 require 'active_record'
+require 'active_support'
 require 'mocha'
 
 require "#{File.dirname(__FILE__)}/../init"
 
-ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :dbfile => ":memory:")
+ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database => ":memory:")
+
+class Rails
+ def self.cache
+   ActiveSupport::Cache::MemCacheStore.new
+ end
+end
 
 class StatisticsTest < Test::Unit::TestCase
   
@@ -23,6 +30,7 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Chained Scope Count", :count => [:all, :named_scope]
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
+    define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
 
     define_calculated_statistic "Total Amount" do
       defined_stats('Basic Sum') * defined_stats('Basic Count')
@@ -43,6 +51,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:chained_scope_count_stat).returns(4)
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
+    MockModel.expects(:cached_stat).returns(9)
     MockModel.expects(:total_amount_stat).returns(54)
      
     ["Basic Count",
@@ -51,6 +60,7 @@ class StatisticsTest < Test::Unit::TestCase
     "Chained Scope Count",
     "Default Filter",
     "Custom Filter",
+    "Cached",
     "Total Amount"].each do |key|
       assert MockModel.statistics_keys.include?(key)
     end
@@ -61,6 +71,7 @@ class StatisticsTest < Test::Unit::TestCase
                    "Chained Scope Count" => 4,
                    "Default Filter" => 5,
                    "Custom Filter" => 3,
+                   "Cached" => 9,
                    "Total Amount" => 54 }, MockModel.statistics)
   end
 
@@ -123,6 +134,18 @@ class StatisticsTest < Test::Unit::TestCase
         param3 == { :conditions => "DATE(created_at) > '#{Date.today.to_s(:db)}' AND channel = 'chan5'" } )
     end.returns(3)
     assert_equal 3, MockModel.custom_filter_stat(:channel => 'chan5', :start_date => Date.today.to_s(:db))
+  end
+
+  def test_cached_stat
+    MockModel.expects(:calculate).returns(6)
+    assert_equal 6, MockModel.cached_stat({:channel => 'chan5'})
+
+    MockModel.stubs(:calculate).returns(8)
+    assert_equal 6, MockModel.cached_stat({:channel => 'chan5'})
+    assert_equal 8, MockModel.cached_stat({})
+
+    sleep(1)
+    assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})       
   end
   
 end

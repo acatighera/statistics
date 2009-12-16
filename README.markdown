@@ -47,6 +47,19 @@ Note: I found filtering to be an important part of reporting (ie. filtering by d
     # NOTE: filters are optional (ie. no filters will be applied if none are passed in)
     Account.get_stat(:user_count)
 
+#### Caching
+
+This is a new feature that uses `Rails.cache`. You can cache certain statistics for a specified amount of time (see below). By default caching is disabled if you do not pass in the `:cache_for` option. It is also important to note that caching is scoped by filters, there is no way around this since different filters produce different values.
+    class Account < ActiveRecord::Base
+      define_statistic :user_count, :count => :all, :cache_for => 30.minutes, :filter_on { :state => 'state = ?' }
+    end
+
+    Account.statistics(:state => 'NY') # This call generates a SQL query
+    
+    Account.statistics(:state => 'NY') # This call and subsequent calls for the next 30 minutes will use the cached value
+    
+    Account.statistics(:state => 'PA') # This call generates a SQL query because the user count for NY and PA could be different (and probably is)
+
 #### Standardized
 
 All ActiveRecord classes now respond to `statistics` and `get_stat` methods

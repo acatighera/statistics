@@ -24,6 +24,7 @@ module Statistics
     #* +column_name+ - The SQL column to perform the operation on (default: +id+)
     #* +filter_on+ - A hash with keys that represent filters. The with values in the has are rules 
     #   on how to generate the query for the correspond filter.
+    #* +cached_for+ - A duration for how long to cache this specific statistic
     #
     #   Additional options can also be passed in that would normally be passed to an ActiveRecord 
     #   +calculate+ call, like +conditions+, +joins+, etc
@@ -39,6 +40,7 @@ module Statistics
     #    define_statistic "Chained Scope Count", :count => [:all, :my_scope]
     #    define_statistic "Default Filter", :count => :all
     #    define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?' }
+    #    define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
     #  end
     def define_statistic(name, options)
       method_name = name.to_s.gsub(" ", "").underscore + "_stat"
@@ -51,11 +53,16 @@ module Statistics
 
       calculation = options.keys.find {|opt| Statistics::supported_calculations.include?(opt)}
       calculation ||= :count
-      
+
       # We must use the metaclass here to metaprogrammatically define a class method
       (class<<self; self; end).instance_eval do 
         define_method(method_name) do |filters|
+          # check the cache before running a query for the stat
+          cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if options[:cache_for]
+          return cached_val unless cached_val.nil?
+
           scoped_options = options.dclone
+
           filters.each do |key, value|
             if value
               sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
@@ -76,7 +83,12 @@ module Statistics
           scopes.each do |scope|
             base = base.send(scope)
           end if scopes != [:all] 
-          base.calculate(calculation, scoped_options[:column_name], sql_options(scoped_options))
+          stat_value = base.calculate(calculation, scoped_options[:column_name], sql_options(scoped_options))
+
+          # cache stat value
+          Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, :expires_in => options[:cache_for]) if options[:cache_for]          
+
+          stat_value
         end
       end
     end
@@ -160,6 +172,7 @@ module Statistics
       end
       options.delete(:column_name)
       options.delete(:filter_on)
+      options.delete(:cache_for)
       options
     end
   end
