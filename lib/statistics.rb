@@ -61,7 +61,7 @@ module Statistics
           cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if options[:cache_for]
           return cached_val unless cached_val.nil?
 
-          scoped_options = options.dclone
+          scoped_options = Marshal.load(Marshal.dump(options))
 
           filters.each do |key, value|
             if value
