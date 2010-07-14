@@ -2,39 +2,39 @@ module Statistics
   class << self
     def included(base)
       base.extend(HasStats)
-    end    
+    end
 
     def default_filters(filters)
       ActiveRecord::Base.instance_eval { @filter_all_on = filters }
     end
 
     def supported_calculations
-      [:average, :count, :maximum, :minimum, :sum]  
+      [:average, :count, :maximum, :minimum, :sum]
     end
-  end  
+  end
 
   # This extension provides the ability to define statistics for reporting purposes
   module HasStats
 
     # OPTIONS:
     #
-    #* +average+, +count+, +sum+, +maximum+, +minimum+ - Only one of these keys is passed, which 
-    #   one depends on the type of operation. The value is an array of named scopes to scope the 
+    #* +average+, +count+, +sum+, +maximum+, +minimum+ - Only one of these keys is passed, which
+    #   one depends on the type of operation. The value is an array of named scopes to scope the
     #   operation by (+:all+ should be used if no scopes are to be applied)
     #* +column_name+ - The SQL column to perform the operation on (default: +id+)
-    #* +filter_on+ - A hash with keys that represent filters. The with values in the has are rules 
+    #* +filter_on+ - A hash with keys that represent filters. The with values in the has are rules
     #   on how to generate the query for the correspond filter.
     #* +cached_for+ - A duration for how long to cache this specific statistic
     #
-    #   Additional options can also be passed in that would normally be passed to an ActiveRecord 
+    #   Additional options can also be passed in that would normally be passed to an ActiveRecord
     #   +calculate+ call, like +conditions+, +joins+, etc
     #
     # EXAMPLE:
     #
     #  class MockModel < ActiveRecord::Base
-    #    
+    #
     #    named_scope :my_scope, :conditions => 'value > 5'
-    #     
+    #
     #    define_statistic "Basic Count", :count => :all
     #    define_statistic "Basic Sum", :sum => :all, :column_name => 'amount'
     #    define_statistic "Chained Scope Count", :count => [:all, :my_scope]
@@ -44,18 +44,18 @@ module Statistics
     #  end
     def define_statistic(name, options)
       method_name = name.to_s.gsub(" ", "").underscore + "_stat"
-      
+
       @statistics ||= {}
       @filter_all_on ||= ActiveRecord::Base.instance_eval { @filter_all_on }
       @statistics[name] = method_name
-      
+
       options = { :column_name => :id }.merge(options)
 
       calculation = options.keys.find {|opt| Statistics::supported_calculations.include?(opt)}
       calculation ||= :count
 
       # We must use the metaclass here to metaprogrammatically define a class method
-      (class<<self; self; end).instance_eval do 
+      (class<<self; self; end).instance_eval do
         define_method(method_name) do |filters|
           # check the cache before running a query for the stat
           cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if options[:cache_for]
@@ -68,33 +68,33 @@ module Statistics
               sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
               sql = sql.gsub("%t", "#{table_name}")
               sql_frag = send(:sanitize_sql_for_conditions, sql)
-              case 
-                when sql_frag.nil? : nil
-                when scoped_options[:conditions].nil? : scoped_options[:conditions] = sql_frag
-                when scoped_options[:conditions].is_a?(Array) : scoped_options[:conditions][0].concat(" AND #{sql_frag}")
-                when scoped_options[:conditions].is_a?(String) : scoped_options[:conditions].concat(" AND #{sql_frag}")
+              case
+                when sql_frag.nil? then nil
+                when scoped_options[:conditions].nil? then scoped_options[:conditions] = sql_frag
+                when scoped_options[:conditions].is_a?(Array) then scoped_options[:conditions][0].concat(" AND #{sql_frag}")
+                when scoped_options[:conditions].is_a?(String) then scoped_options[:conditions].concat(" AND #{sql_frag}")
               end
             end
           end if filters.is_a?(Hash)
-          
+
           base = self
           # chain named scopes
           scopes = Array(scoped_options[calculation])
           scopes.each do |scope|
             base = base.send(scope)
-          end if scopes != [:all] 
+          end if scopes != [:all]
           stat_value = base.send(calculation, scoped_options[:column_name], sql_options(scoped_options))
 
           # cache stat value
-          Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, :expires_in => options[:cache_for]) if options[:cache_for]          
+          Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, :expires_in => options[:cache_for]) if options[:cache_for]
 
           stat_value
         end
       end
     end
-    
+
     # Defines a statistic using a block that has access to all other defined statistics
-    # 
+    #
     # EXAMPLE:
     # class MockModel < ActiveRecord::Base
     #   define_statistic "Basic Count", :count => :all
@@ -107,20 +107,20 @@ module Statistics
 
       @statistics ||= {}
       @statistics[name] = method_name
-      
-      (class<<self; self; end).instance_eval do 
+
+      (class<<self; self; end).instance_eval do
         define_method(method_name) do |filters|
           @filters = filters
           yield
         end
       end
     end
-    
+
     # returns an array containing the names/keys of all defined statistics
     def statistics_keys
       @statistics.keys
     end
-    
+
     # Calculates all the statistics defined for this AR class and returns a hash with the values.
     # There is an optional parameter that is a hash of all values you want to filter by.
     #
@@ -133,7 +133,7 @@ module Statistics
         stats_hash
       end
     end
-    
+
     # returns a single statistic based on the +stat_name+ paramater passed in and
     # similarly to the +statistics+ method, it also can take filters.
     #
@@ -143,7 +143,7 @@ module Statistics
     def get_stat(stat_name, filters = {})
       send(@statistics[stat_name], filters) if @statistics[stat_name]
     end
-    
+
     # to keep things DRY anything that all statistics need to be filterable by can be defined
     # seperatly using this method
     #
@@ -162,19 +162,19 @@ module Statistics
 
     private
 
-    def defined_stats(name)
-      get_stat(name, @filters)
-    end
-
-    def sql_options(options)
-      Statistics::supported_calculations.each do |deletable|
-        options.delete(deletable)
+      def defined_stats(name)
+        get_stat(name, @filters)
       end
-      options.delete(:column_name)
-      options.delete(:filter_on)
-      options.delete(:cache_for)
-      options
-    end
+
+      def sql_options(options)
+        Statistics::supported_calculations.each do |deletable|
+          options.delete(deletable)
+        end
+        options.delete(:column_name)
+        options.delete(:filter_on)
+        options.delete(:cache_for)
+        options
+      end
   end
 end
 
