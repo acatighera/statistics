@@ -2,6 +2,10 @@
 
 This ActiverRecord plugin allows you to easily define and pull statistics for AR models. This plugin was built with reporting in mind.
 
+## Announcements
+
+- Bug: There is a bug in Rails 2.x where grouping by multiple fields results in wrong values for calculations. I have created a patch for this bug, please encourage the fix by giving feedback or giving +1 plus a short supportive comment. The patch lives here: https://rails.lighthouseapp.com/projects/8994/tickets/5182-activerecordcalculations-returns-incorrect-data-when-grouping-by-multiple-fields.
+
 ## Installation
     gem install statistics
 OR
