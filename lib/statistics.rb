@@ -64,7 +64,7 @@ module Statistics
           scoped_options = Marshal.load(Marshal.dump(options))
 
           filters.each do |key, value|
-            if value
+            unless value.nil?
               sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
               sql = sql.gsub("%t", "#{table_name}")
               sql_frag = send(:sanitize_sql_for_conditions, sql)
