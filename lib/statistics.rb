@@ -11,6 +11,10 @@ module Statistics
     def supported_calculations
       [:average, :count, :maximum, :minimum, :sum]
     end
+
+    def supported_time_ranges
+      [ :range_today, :range_week, :range_month, :range_year ]
+    end
   end
 
   # This extension provides the ability to define statistics for reporting purposes
@@ -58,6 +62,7 @@ module Statistics
       (class<<self; self; end).instance_eval do
         define_method(method_name) do |filters|
           # check the cache before running a query for the stat
+          # TODO: Better TIME RANGE support when caching requests!
           cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if options[:cache_for]
           return cached_val unless cached_val.nil?
 
@@ -65,9 +70,30 @@ module Statistics
 
           filters.each do |key, value|
             unless value.nil?
-              sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
+              if Statistics::supported_time_ranges.include? key
+                # In key is time_range type and in key is FIELD
+                range = nil
+                case key
+                  when :range_today then
+                    range = Time.now.all_day
+                  when :range_week
+                    range = Time.now.all_week
+                  when :range_month then
+                    range = Time.now.all_month
+                  when :range_year then
+                    range = Time.now.all_year
+                end
+
+                # Set value and BETWEEN
+                sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))
+                sql[value] = range
+              else
+                sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
+              end
+
               sql = sql.gsub("%t", "#{table_name}")
               sql_frag = send(:sanitize_sql_for_conditions, sql)
+
               case
                 when sql_frag.nil? then nil
                 when scoped_options[:conditions].nil? then scoped_options[:conditions] = sql_frag
