@@ -89,9 +89,9 @@ module Statistics
                 sql[value] = range
               else
                 sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
+                sql = sql.gsub("%t", "#{table_name}")
               end
 
-              sql = sql.gsub("%t", "#{table_name}")
               sql_frag = send(:sanitize_sql_for_conditions, sql)
 
               case

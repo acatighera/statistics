@@ -2,6 +2,31 @@
 
 This ActiverRecord plugin allows you to easily define and pull statistics for AR models. This plugin was built with reporting in mind.
 
+## !!! READ ANNOUCEMENT BY STRNADJ !!!
+
+I need this specific behaviour for collect staticitics in time ranges on
+specific field (created_at, payed_at etc..). If you decide to use my
+modification:
+
+    gem 'statistics', '1.0.1', :git => "https://github.com/Strnadj/statistics.git"
+
+You will be no able to use named filters:
+
+    [ :range_today :range_week, :range_month and :range_year ]
+
+If you want to use it here is how:
+
+    class User < ActiveRecord::Base
+      define_statistic :user_count, :count => :all
+    end
+
+    # I want count of user registrated last week and month
+    last_week = User.get_stat(:user_count, :range_week => :created_at)
+    last_month = User.get_stat(:user_count, :range_month => :created_at)
+
+
+Allways use: :range_week => :created_at
+
 ## Announcements
 
 - Bug: There is a bug in Rails 2.x where grouping by multiple fields results in wrong values for calculations. I have created a patch for this bug, please encourage the fix by giving feedback or giving +1 plus a short supportive comment. [The patch lives here: https://rails.lighthouseapp.com/projects/8994/tickets/5182-activerecordcalculations-returns-incorrect-data-when-grouping-by-multiple-fields](https://rails.lighthouseapp.com/projects/8994/tickets/5182-activerecordcalculations-returns-incorrect-data-when-grouping-by-multiple-fields).
