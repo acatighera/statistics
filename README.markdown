@@ -8,7 +8,7 @@ I need this specific behaviour for collect staticitics in time ranges on
 specific field (created_at, payed_at etc..). If you decide to use my
 modification:
 
-    gem 'statistics', '1.0.1', :git => "https://github.com/Strnadj/statistics.git"
+    gem 'statistics', '1.0.3', :git => "https://github.com/Strnadj/statistics.git"
 
 You will be no able to use named filters:
 

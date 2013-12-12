@@ -85,8 +85,7 @@ module Statistics
                 end
 
                 # Set value and BETWEEN
-                sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))
-                sql[value] = range
+                sql = { value.to_sym => range }
               else
                 sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
                 sql = sql.gsub("%t", "#{table_name}")
