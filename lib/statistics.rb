@@ -108,7 +108,8 @@ module Statistics
           scopes.each do |scope|
             base = base.send(scope)
           end if scopes != [:all]
-          stat_value = base.send(calculation, scoped_options[:column_name], sql_options(scoped_options))
+          column_name = scoped_options[:column_name]
+          stat_value = base.where(sql_options(scoped_options)[:conditions]).send(calculation, column_name)
 
           # cache stat value
           Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, :expires_in => options[:cache_for]) if options[:cache_for]
@@ -204,3 +205,4 @@ module Statistics
 end
 
 ActiveRecord::Base.send(:include, Statistics)
+
