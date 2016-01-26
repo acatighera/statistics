@@ -1,0 +1,17 @@
+PATH
+  remote: .
+  specs:
+    statistics (1.0.3)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  statistics!
+
+BUNDLED WITH
+   1.11.2
