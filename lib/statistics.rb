@@ -109,10 +109,12 @@ module Statistics
             base = base.send(scope)
           end if scopes != [:all]
           column_name = scoped_options[:column_name]
-          stat_value = base.where(sql_options(scoped_options)[:conditions]).send(calculation, column_name)
+          stat_value = base
+          stat_value = stat_value.joins(scoped_options[:joins]) if scoped_options[:joins]
+          stat_value = stat_value.where(sql_options(scoped_options)[:conditions]).send(calculation, column_name)
 
           # cache stat value
-          Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, :expires_in => options[:cache_for]) if options[:cache_for]
+          Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, expires_in: options[:cache_for]) if options[:cache_for]
 
           stat_value
         end
