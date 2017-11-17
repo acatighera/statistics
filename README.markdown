@@ -2,7 +2,7 @@
 
 This ActiverRecord plugin allows you to easily define and pull statistics for AR models. This plugin was built with reporting in mind.
 
-## !!! READ ANNOUCEMENT BY TAM !!!
+## ANNOUCEMENT
 
 I need this specific behaviour for collect staticitics in time ranges on
 specific field (created_at, payed_at etc..). If you decide to use my
