@@ -54,46 +54,47 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:total_amount_stat).returns(54)
 
     ["Basic Count",
-    :symbol_count,
-    "Basic Sum",
-    "Chained Scope Count",
-    "Default Filter",
-    "Custom Filter",
-    "Cached",
-    "Total Amount"].each do |key|
-      assert MockModel.statistics_keys.include?(key)
-    end
+     :symbol_count,
+     "Basic Sum",
+     "Chained Scope Count",
+     "Default Filter",
+     "Custom Filter",
+     "Cached",
+     "Total Amount"].each do |key|
+       assert MockModel.statistics_keys.include?(key)
+     end
 
-    assert_equal({ "Basic Count" => 2,
-                   :symbol_count => 2,
-                   "Basic Sum" => 27,
-                   "Chained Scope Count" => 4,
-                   "Default Filter" => 5,
-                   "Custom Filter" => 3,
-                   "Cached" => 9,
-                   "Total Amount" => 54 }, MockModel.statistics)
+     assert_equal({ "Basic Count" => 2,
+                    :symbol_count => 2,
+                    "Basic Sum" => 27,
+                    "Chained Scope Count" => 4,
+                    "Default Filter" => 5,
+                    "Custom Filter" => 3,
+                    "Cached" => 9,
+                    "Total Amount" => 54 }, MockModel.statistics)
   end
 
   def test_get_stat
-    MockModel.expects(:calculate).with(:count, :id, {}).returns(3)
+    MockModel.expects(:count).with(:id).returns(3)
     assert_equal 3, MockModel.get_stat("Basic Count")
 
-    MockModel.expects(:calculate).with(:count, :id, { :conditions => "user_id = '54321'"}).returns(4)
+    object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(4) }
+    MockModel.expects(:where).with("user_id = '54321'").returns(object)
     assert_equal 4, MockModel.get_stat("Basic Count", :user_id => 54321)
   end
 
   def test_basic_stat
-    MockModel.expects(:calculate).with(:count, :id, {}).returns(3)
+    MockModel.expects(:count).with(:id).returns(3)
     assert_equal 3, MockModel.basic_count_stat({})
 
-    MockModel.expects(:calculate).with(:sum, 'amount', {}).returns(31)
+    MockModel.expects(:sum).with("amount").returns(31)
     assert_equal 31, MockModel.basic_sum_stat({})
   end
 
   def test_chained_scope_stat
     MockModel.expects(:all).returns(MockModel)
     MockModel.expects(:named_scope).returns(MockModel)
-    MockModel.expects(:calculate).with(:count, :id, {}).returns(5)
+    MockModel.expects(:count).with(:id).returns(5)
     assert_equal 5, MockModel.chained_scope_count_stat({})
   end
 
@@ -115,38 +116,35 @@ class StatisticsTest < Test::Unit::TestCase
   end
 
   def test_default_filter_stat
-    MockModel.expects(:calculate).with(:count, :id, {}).returns(8)
+    MockModel.expects(:count).with(:id).returns(8)
     assert_equal 8, MockModel.default_filter_stat({})
 
-    MockModel.expects(:calculate).with(:count, :id, { :conditions => "user_id = '12345'" }).returns(2)
+    object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(2) }
+    MockModel.expects(:where).with("user_id = '12345'").returns(object)
     assert_equal 2, MockModel.default_filter_stat( :user_id => '12345' )
   end
 
   def test_custom_filter_stat
-    MockModel.expects(:calculate).with(:count, :id, {}).returns(6)
+    MockModel.expects(:count).with(:id).returns(6)
     assert_equal 6, MockModel.custom_filter_stat({})
 
-    MockModel.expects(:calculate).with() do |param1, param2, param3|
-        param1 == :count &&
-        param2 == :id &&
-        (param3 ==  { :conditions => "channel = 'chan5' AND DATE(created_at) > '#{Date.today.to_s(:db)}'" } ||
-        param3 == { :conditions => "DATE(created_at) > '#{Date.today.to_s(:db)}' AND channel = 'chan5'" } )
-    end.returns(3)
+    object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(3) }
+    MockModel.expects(:where).with("channel = 'chan5' AND DATE(created_at) > '#{Date.today.to_s(:db)}'").returns(object)
     assert_equal 3, MockModel.custom_filter_stat(:channel => 'chan5', :start_date => Date.today.to_s(:db))
   end
 
   def test_cached_stat
-    MockModel.expects(:calculate).returns(6)
-    assert_equal 6, MockModel.cached_stat({:channel => 'chan5'})
-
-    MockModel.stubs(:calculate).returns(8)
-    assert_equal 6, MockModel.cached_stat({:channel => 'chan5'})
-    assert_equal 8, MockModel.cached_stat({})
-
-    sleep(1)
-    assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})
     with_caching do
+      object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(6) }
+      MockModel.expects(:where).returns(object)
+      assert_equal 6, MockModel.cached_stat({:channel => 'chan5'})
+
+      MockModel.expects(:where).never
+      assert_equal 6, MockModel.cached_stat({:channel => 'chan5'})
+      sleep(1)
+      object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(8) }
+      MockModel.expects(:where).returns(object)
+      assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})
     end
   end
-
 end
