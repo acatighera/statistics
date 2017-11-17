@@ -6,19 +6,17 @@ gem 'mocha', '>= 0.9.0'
 require 'active_record'
 require 'active_support'
 require 'mocha/setup'
+require 'byebug'
+require 'rails'
 
 require_relative "../init"
+require_relative "./support/caching_helper"
 
 ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database => ":memory:")
 
-class Rails
- def self.cache
-   ActiveSupport::Cache::MemCacheStore.new
- end
-end
-
 load "./db/schema.rb"
 class StatisticsTest < Test::Unit::TestCase
+  include CachingHelper
 
   class BasicModel < ActiveRecord::Base
     define_statistic :basic_num, :count => :all
@@ -147,6 +145,8 @@ class StatisticsTest < Test::Unit::TestCase
 
     sleep(1)
     assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})
+    with_caching do
+    end
   end
 
 end
