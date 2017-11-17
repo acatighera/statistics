@@ -17,6 +17,7 @@ class Rails
  end
 end
 
+load "./db/schema.rb"
 class StatisticsTest < Test::Unit::TestCase
 
   class BasicModel < ActiveRecord::Base
