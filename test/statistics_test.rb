@@ -5,9 +5,9 @@ gem 'activerecord', '>= 1.15.4.7794'
 gem 'mocha', '>= 0.9.0'
 require 'active_record'
 require 'active_support'
-require 'mocha'
+require 'mocha/setup'
 
-require "#{File.dirname(__FILE__)}/../init"
+require_relative "../init"
 
 ActiveRecord::Base.establish_connection(:adapter => "sqlite3", :database => ":memory:")
 
@@ -18,11 +18,11 @@ class Rails
 end
 
 class StatisticsTest < Test::Unit::TestCase
-  
+
   class BasicModel < ActiveRecord::Base
     define_statistic :basic_num, :count => :all
   end
-  
+
   class MockModel < ActiveRecord::Base
     define_statistic "Basic Count", :count => :all
     define_statistic :symbol_count, :count => :all
@@ -53,7 +53,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:custom_filter_stat).returns(3)
     MockModel.expects(:cached_stat).returns(9)
     MockModel.expects(:total_amount_stat).returns(54)
-     
+
     ["Basic Count",
     :symbol_count,
     "Basic Sum",
@@ -77,12 +77,12 @@ class StatisticsTest < Test::Unit::TestCase
 
   def test_get_stat
     MockModel.expects(:calculate).with(:count, :id, {}).returns(3)
-    assert_equal 3, MockModel.get_stat("Basic Count")    
+    assert_equal 3, MockModel.get_stat("Basic Count")
 
     MockModel.expects(:calculate).with(:count, :id, { :conditions => "user_id = '54321'"}).returns(4)
     assert_equal 4, MockModel.get_stat("Basic Count", :user_id => 54321)
   end
-  
+
   def test_basic_stat
     MockModel.expects(:calculate).with(:count, :id, {}).returns(3)
     assert_equal 3, MockModel.basic_count_stat({})
@@ -90,7 +90,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:calculate).with(:sum, 'amount', {}).returns(31)
     assert_equal 31, MockModel.basic_sum_stat({})
   end
-  
+
   def test_chained_scope_stat
     MockModel.expects(:all).returns(MockModel)
     MockModel.expects(:named_scope).returns(MockModel)
@@ -122,11 +122,11 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:calculate).with(:count, :id, { :conditions => "user_id = '12345'" }).returns(2)
     assert_equal 2, MockModel.default_filter_stat( :user_id => '12345' )
   end
-  
+
   def test_custom_filter_stat
     MockModel.expects(:calculate).with(:count, :id, {}).returns(6)
     assert_equal 6, MockModel.custom_filter_stat({})
-    
+
     MockModel.expects(:calculate).with() do |param1, param2, param3|
         param1 == :count &&
         param2 == :id &&
@@ -145,7 +145,7 @@ class StatisticsTest < Test::Unit::TestCase
     assert_equal 8, MockModel.cached_stat({})
 
     sleep(1)
-    assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})       
+    assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})
   end
-  
+
 end

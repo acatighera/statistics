@@ -6,3 +6,4 @@ debug.log
 coverage
 coverage.data
 pkg/
+.byebug_history
