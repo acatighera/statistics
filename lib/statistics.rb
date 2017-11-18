@@ -63,10 +63,11 @@ module Statistics
         define_method(method_name) do |filters|
           # check the cache before running a query for the stat
           # TODO: Better TIME RANGE support when caching requests!
-          cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if options[:cache_for]
+          cache_for = options[:cache_for]
+          cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if cache_for
           return cached_val unless cached_val.nil?
 
-          scoped_options = Marshal.load(Marshal.dump(options))
+          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for)))
 
           filters.each do |key, value|
             unless value.nil?
@@ -118,7 +119,10 @@ module Statistics
           end
 
           # cache stat value
-          Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, expires_in: options[:cache_for]) if options[:cache_for]
+          if cache_for
+            expires_in = cache_for.is_a?(Proc) ? cache_for.call(filters) : cache_for
+            Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, expires_in: expires_in)
+          end
 
           stat_value
         end

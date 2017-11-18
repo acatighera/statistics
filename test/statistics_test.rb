@@ -30,6 +30,7 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
     define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
+    define_statistic "Dynamic Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => lambda { |filter_on| filter_on[:channel] == "chan5" ? 1.second : 0.seconds }
 
     define_calculated_statistic "Total Amount" do
       defined_stats('Basic Sum') * defined_stats('Basic Count')
@@ -51,6 +52,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
     MockModel.expects(:cached_stat).returns(9)
+    MockModel.expects(:dynamic_cached_stat).returns(7)
     MockModel.expects(:total_amount_stat).returns(54)
 
     ["Basic Count",
@@ -60,6 +62,7 @@ class StatisticsTest < Test::Unit::TestCase
      "Default Filter",
      "Custom Filter",
      "Cached",
+     "Dynamic Cached",
      "Total Amount"].each do |key|
        assert MockModel.statistics_keys.include?(key)
      end
@@ -71,6 +74,7 @@ class StatisticsTest < Test::Unit::TestCase
                     "Default Filter" => 5,
                     "Custom Filter" => 3,
                     "Cached" => 9,
+                    "Dynamic Cached" => 7,
                     "Total Amount" => 54 }, MockModel.statistics)
   end
 
@@ -145,6 +149,21 @@ class StatisticsTest < Test::Unit::TestCase
       object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(8) }
       MockModel.expects(:where).returns(object)
       assert_equal 8, MockModel.cached_stat({:channel => 'chan5'})
+    end
+  end
+
+  def test_dynamic_cached_stat
+    with_caching do
+      object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(6) }
+      MockModel.expects(:where).returns(object)
+      assert_equal 6, MockModel.dynamic_cached_stat({:channel => 'chan5'})
+
+      MockModel.expects(:where).never
+      assert_equal 6, MockModel.dynamic_cached_stat({:channel => 'chan5'})
+
+      object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(7) }
+      MockModel.expects(:where).returns(object)
+      assert_equal 7, MockModel.dynamic_cached_stat({:channel => 'chan6'})
     end
   end
 end
