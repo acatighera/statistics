@@ -36,6 +36,9 @@ Allways use: :range_week => :created_at
 OR
     script/plugin install git://github.com/tam-vo/statistics.git
 
+## Run tests
+    bundle exec ruby test/statistics_test.rb
+
 ## Examples
 #### Defining statistics is similar to defining named scopes. Strings and symbols both work as names.
 

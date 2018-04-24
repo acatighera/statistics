@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{statistics}
-  s.version = "1.0.3"
+  s.version = "1.0.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alexandru Catighera"]
@@ -26,7 +26,7 @@ Gem::Specification.new do |s|
      "statistics.gemspec",
      "test/statistics_test.rb"
   ]
-  s.homepage = %q{http://github.com/acatighera/statistics}
+  s.homepage = %q{http://github.com/tam-vo/statistics}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.5}
