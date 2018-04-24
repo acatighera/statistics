@@ -1,3 +1,5 @@
+require "retriable"
+
 module Statistics
   class << self
     def included(base)
@@ -177,7 +179,11 @@ module Statistics
     # MockModel.get_stat('Basic Count')
     # MockModel.get_stat('Basic Count', :user_type => 'registered', :user_status => 'active')
     def get_stat(stat_name, filters = {})
-      send(@statistics[stat_name], filters) if @statistics[stat_name]
+      errors = []
+      errors << PG::TRSerializationFailure if defined?(PG::TRSerializationFailure)
+      Retriable.retriable(on: errors, tries: 5, base_interval: 1) do
+        send(@statistics[stat_name], filters) if @statistics[stat_name]
+      end
     end
 
     # to keep things DRY anything that all statistics need to be filterable by can be defined

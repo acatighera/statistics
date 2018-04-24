@@ -31,6 +31,9 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.5}
   s.summary = %q{An ActiveRecord gem that makes it easier to do reporting.}
+
+  s.add_dependency "retriable"
+
   s.test_files = [
     "test/statistics_test.rb"
   ]
