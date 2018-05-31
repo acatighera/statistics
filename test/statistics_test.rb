@@ -166,4 +166,16 @@ class StatisticsTest < Test::Unit::TestCase
       assert_equal 7, MockModel.dynamic_cached_stat({:channel => 'chan6'})
     end
   end
+
+  def test_bypass_cached_stat
+    with_caching do
+      object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(6) }
+      MockModel.expects(:where).returns(object)
+      assert_equal 6, MockModel.get_stat!("Dynamic Cached", {:channel => 'chan5'})
+
+      object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(8) }
+      MockModel.expects(:where).returns(object)
+      assert_equal 8, MockModel.get_stat!("Dynamic Cached", {:channel => 'chan5'})
+    end
+  end
 end

@@ -66,7 +66,8 @@ module Statistics
           # check the cache before running a query for the stat
           # TODO: Better TIME RANGE support when caching requests!
           cache_for = options[:cache_for]
-          cached_val = Rails.cache.read("#{self.name}#{method_name}#{filters}") if cache_for
+          cache_key = "#{self.name}#{method_name}#{filters}"
+          cached_val = Rails.cache.read(cache_key) if cache_for
           return cached_val unless cached_val.nil?
 
           scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for)))
@@ -123,7 +124,7 @@ module Statistics
           # cache stat value
           if cache_for
             expires_in = cache_for.is_a?(Proc) ? cache_for.call(filters) : cache_for
-            Rails.cache.write("#{self.name}#{method_name}#{filters}", stat_value, expires_in: expires_in)
+            Rails.cache.write(cache_key, stat_value, expires_in: expires_in)
           end
 
           stat_value
@@ -184,6 +185,16 @@ module Statistics
       Retriable.retriable(on: errors, tries: 5, base_interval: 1) do
         send(@statistics[stat_name], filters) if @statistics[stat_name]
       end
+    end
+
+    def clear_stat_cache(stat_name, filters={})
+      method_name = stat_name.to_s.gsub(" ", "").underscore + "_stat"
+      Rails.cache.delete("#{self.name}#{method_name}#{filters}")
+    end
+
+    def get_stat!(stat_name, filters={})
+      clear_stat_cache(stat_name, filters)
+      get_stat(stat_name, filters)
     end
 
     # to keep things DRY anything that all statistics need to be filterable by can be defined
