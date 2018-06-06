@@ -48,12 +48,12 @@ module Statistics
     #    define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?' }
     #    define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
     #  end
-    def define_statistic(name, options)
-      method_name = name.to_s.gsub(" ", "").underscore + "_stat"
+    def define_statistic(stat_name, options)
+      method_name = stat_name.to_s.gsub(" ", "").underscore + "_stat"
 
       @statistics ||= {}
       @filter_all_on ||= ActiveRecord::Base.instance_eval { @filter_all_on }
-      @statistics[name] = method_name
+      @statistics[stat_name] = method_name
 
       options = { :column_name => :id }.merge(options)
 
@@ -62,14 +62,7 @@ module Statistics
 
       # We must use the metaclass here to metaprogrammatically define a class method
       (class<<self; self; end).instance_eval do
-        define_method(method_name) do |filters|
-          # check the cache before running a query for the stat
-          # TODO: Better TIME RANGE support when caching requests!
-          cache_for = options[:cache_for]
-          cache_key = "#{self.name}#{method_name}#{filters}"
-          cached_val = Rails.cache.read(cache_key) if cache_for
-          return cached_val unless cached_val.nil?
-
+        define_method("#{stat_name}_query") do |filters|
           scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for)))
 
           filters.each do |key, value|
@@ -112,15 +105,24 @@ module Statistics
           scopes.each do |scope|
             base = base.send(scope)
           end if scopes != [:all]
-          column_name = scoped_options[:column_name]
           stat_value = base
           stat_value = stat_value.joins(scoped_options[:joins]) if scoped_options[:joins]
           if (conditions = sql_options(scoped_options)[:conditions]).present?
-            stat_value = stat_value.where(conditions).send(calculation, column_name)
-          else
-            stat_value = stat_value.send(calculation, column_name)
+            stat_value = stat_value.where(conditions)
           end
+          stat_value
+        end
 
+        define_method(method_name) do |filters|
+          # check the cache before running a query for the stat
+          cache_for = options[:cache_for]
+          cache_key = "#{self.name}#{method_name}#{filters}"
+          cached_val = Rails.cache.read(cache_key) if cache_for
+          return cached_val unless cached_val.nil?
+
+          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for)))
+          column_name = scoped_options[:column_name]
+          stat_value = send("#{stat_name}_query", filters).send(calculation, column_name)
           # cache stat value
           if cache_for
             expires_in = cache_for.is_a?(Proc) ? cache_for.call(filters) : cache_for
@@ -184,6 +186,14 @@ module Statistics
       errors << PG::TRSerializationFailure if defined?(PG::TRSerializationFailure)
       Retriable.retriable(on: errors, tries: 5, base_interval: 1) do
         send(@statistics[stat_name], filters) if @statistics[stat_name]
+      end
+    end
+
+    def stat_collection(stat_name, filters = {})
+      if @statistics[stat_name]
+        scope = send("#{stat_name}_query", filters)
+        scope = scope.all unless scope.respond_to?(:klass)
+        scope
       end
     end
 

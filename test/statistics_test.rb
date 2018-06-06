@@ -30,7 +30,7 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
     define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
-    define_statistic "Dynamic Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => lambda { |filter_on| filter_on[:channel] == "chan5" ? 1.second : 0.seconds }
+    define_statistic "Dynamic Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => lambda { |filter_on| filter_on[:channel] == "chan5" ? 5.minutes : 0.seconds }
 
     define_calculated_statistic "Total Amount" do
       defined_stats('Basic Sum') * defined_stats('Basic Count')
@@ -137,6 +137,16 @@ class StatisticsTest < Test::Unit::TestCase
     assert_equal 3, MockModel.custom_filter_stat(:channel => 'chan5', :start_date => Date.today.to_s(:db))
   end
 
+  def test_custom_filter_stat_collection
+    3.times do
+      MockModel.create
+    end
+
+    collection = MockModel.stat_collection("Basic Count")
+    assert_equal collection.length, 3
+    assert_equal collection.map(&:id).sort, MockModel.pluck(:id).sort
+  end
+
   def test_cached_stat
     with_caching do
       object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(6) }
@@ -171,7 +181,7 @@ class StatisticsTest < Test::Unit::TestCase
     with_caching do
       object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(6) }
       MockModel.expects(:where).returns(object)
-      assert_equal 6, MockModel.get_stat!("Dynamic Cached", {:channel => 'chan5'})
+      assert_equal 6, MockModel.get_stat("Dynamic Cached", {:channel => 'chan5'})
 
       object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(8) }
       MockModel.expects(:where).returns(object)
