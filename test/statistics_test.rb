@@ -45,6 +45,12 @@ class StatisticsTest < Test::Unit::TestCase
     assert_equal({ :basic_num => 1 }, BasicModel.statistics)
   end
 
+  def test_invalid_condition
+    assert_raise(RuntimeError.new("Invalidate key status")) do
+      MockModel.get_stat("Custom Filter", status: "active")
+    end
+  end
+
   def test_statistics
     MockModel.expects(:basic_count_stat).returns(2)
     MockModel.expects(:symbol_count_stat).returns(2)
