@@ -29,6 +29,7 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Chained Scope Count", :count => [:all, :named_scope]
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
+    define_statistic "Default Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :default }
     define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
     define_statistic "Dynamic Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => lambda { |filter_on| filter_on[:channel] == "chan5" ? 5.minutes : 0.seconds }
 
@@ -51,6 +52,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:chained_scope_count_stat).returns(4)
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
+    MockModel.expects(:default_sql_filter_stat).returns(3)
     MockModel.expects(:cached_stat).returns(9)
     MockModel.expects(:dynamic_cached_stat).returns(7)
     MockModel.expects(:total_amount_stat).returns(54)
@@ -61,6 +63,7 @@ class StatisticsTest < Test::Unit::TestCase
      "Chained Scope Count",
      "Default Filter",
      "Custom Filter",
+     "Default Sql Filter",
      "Cached",
      "Dynamic Cached",
      "Total Amount"].each do |key|
@@ -73,6 +76,7 @@ class StatisticsTest < Test::Unit::TestCase
                     "Chained Scope Count" => 4,
                     "Default Filter" => 5,
                     "Custom Filter" => 3,
+                    "Default Sql Filter" => 3,
                     "Cached" => 9,
                     "Dynamic Cached" => 7,
                     "Total Amount" => 54 }, MockModel.statistics)
@@ -145,6 +149,12 @@ class StatisticsTest < Test::Unit::TestCase
     collection = MockModel.stat_collection("Basic Count")
     assert_equal collection.length, 3
     assert_equal collection.map(&:id).sort, MockModel.pluck(:id).sort
+  end
+
+  def test_default_sql_builder
+    query = MockModel.stat_collection("Default Sql Filter", channel: "5", created_at: Time.now.all_week).to_sql
+    assert query.include?('"channel" = \'5\'')
+    assert query.include?("BETWEEN")
   end
 
   def test_cached_stat

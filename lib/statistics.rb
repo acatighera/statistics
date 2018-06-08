@@ -67,6 +67,7 @@ module Statistics
 
           filters.each do |key, value|
             unless value.nil?
+              base_query = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key]
               if Statistics::supported_time_ranges.include? key
                 # In key is time_range type and in key is FIELD
                 range = nil
@@ -83,8 +84,10 @@ module Statistics
 
                 # Set value and BETWEEN
                 sql = { value.to_sym => range }
+              elsif base_query == :default
+                sql = { key.to_sym => value }
               else
-                sql = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key].gsub("?", "'#{value}'")
+                sql = base_query.gsub("?", "'#{value}'")
                 sql = sql.gsub("%t", "#{table_name}")
               end
 
