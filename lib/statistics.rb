@@ -63,7 +63,7 @@ module Statistics
       # We must use the metaclass here to metaprogrammatically define a class method
       (class<<self; self; end).instance_eval do
         define_method("#{stat_name}_query") do |filters|
-          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for)))
+          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins)))
 
           filters.each do |key, value|
             unless value.nil?
@@ -110,7 +110,11 @@ module Statistics
             base = base.send(scope)
           end if scopes != [:all]
           stat_value = base
-          stat_value = stat_value.joins(scoped_options[:joins]) if scoped_options[:joins]
+
+          if joins_opt = options[:joins]
+            joins_opt = joins_opt.is_a?(Proc) ? joins_opt.call(filters) : joins_opt
+            stat_value = stat_value.joins(joins_opt)
+          end
           if (conditions = sql_options(scoped_options)[:conditions]).present?
             stat_value = stat_value.where(conditions)
           end
@@ -124,7 +128,7 @@ module Statistics
           cached_val = Rails.cache.read(cache_key) if cache_for
           return cached_val unless cached_val.nil?
 
-          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for)))
+          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins)))
           column_name = scoped_options[:column_name]
           stat_value = send("#{stat_name}_query", filters).send(calculation, column_name)
           # cache stat value
