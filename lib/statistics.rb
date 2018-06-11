@@ -62,6 +62,34 @@ module Statistics
 
       # We must use the metaclass here to metaprogrammatically define a class method
       (class<<self; self; end).instance_eval do
+        define_method("build_sql_frag") do |key, value, base_query|
+          if Statistics::supported_time_ranges.include? key
+            # In key is time_range type and in key is FIELD
+            range = nil
+            case key
+            when :range_today then
+              range = Time.now.all_day
+            when :range_week
+              range = Time.now.all_week
+            when :range_month then
+              range = Time.now.all_month
+            when :range_year then
+              range = Time.now.all_year
+            end
+
+            # Set value and BETWEEN
+            sql = { value.to_sym => range }
+          elsif base_query == :default
+            sql = { key.to_sym => value }
+          elsif base_query == :day_range
+            sql = { key.to_sym => value.beginning_of_day..value.end_of_day }
+          else
+            sql = base_query.gsub("?", "'#{value}'")
+            sql = sql.gsub("%t", "#{table_name}")
+          end
+          sql
+        end
+
         define_method("#{stat_name}_query") do |filters|
           scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins)))
 
@@ -70,30 +98,7 @@ module Statistics
             unless value.nil?
               base_query = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key]
               raise "Invalidate key #{key}" if base_query.blank? && !Statistics::supported_time_ranges.include?(key)
-              if Statistics::supported_time_ranges.include? key
-                # In key is time_range type and in key is FIELD
-                range = nil
-                case key
-                  when :range_today then
-                    range = Time.now.all_day
-                  when :range_week
-                    range = Time.now.all_week
-                  when :range_month then
-                    range = Time.now.all_month
-                  when :range_year then
-                    range = Time.now.all_year
-                end
-
-                # Set value and BETWEEN
-                sql = { value.to_sym => range }
-              elsif base_query == :default
-                sql = { key.to_sym => value }
-              elsif base_query == :day_range
-                sql = { key.to_sym => value.beginning_of_day..value.end_of_day }
-              else
-                sql = base_query.gsub("?", "'#{value}'")
-                sql = sql.gsub("%t", "#{table_name}")
-              end
+              sql = build_sql_frag(key, value, base_query)
               filter_conditions << sql
             end
           end if filters.is_a?(Hash)
