@@ -143,7 +143,8 @@ class StatisticsTest < Test::Unit::TestCase
     assert_equal 6, MockModel.custom_filter_stat({})
 
     object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(3) }
-    MockModel.expects(:where).with("channel = 'chan5' AND DATE(created_at) > '#{Date.today.to_s(:db)}'").returns(object)
+    query_chain = stub.tap { |obj| obj.stubs(:where).with(any_parameters).returns(object) }
+    MockModel.expects(:where).with(any_parameters).returns(query_chain)
     assert_equal 3, MockModel.custom_filter_stat(:channel => 'chan5', :start_date => Date.today.to_s(:db))
   end
 

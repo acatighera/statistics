@@ -65,6 +65,7 @@ module Statistics
         define_method("#{stat_name}_query") do |filters|
           scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins)))
 
+          filter_conditions = []
           filters.each do |key, value|
             unless value.nil?
               base_query = ((@filter_all_on || {}).merge(scoped_options[:filter_on] || {}))[key]
@@ -91,15 +92,7 @@ module Statistics
                 sql = base_query.gsub("?", "'#{value}'")
                 sql = sql.gsub("%t", "#{table_name}")
               end
-
-              sql_frag = send(:sanitize_sql_for_conditions, sql)
-
-              case
-                when sql_frag.nil? then nil
-                when scoped_options[:conditions].nil? then scoped_options[:conditions] = sql_frag
-                when scoped_options[:conditions].is_a?(Array) then scoped_options[:conditions][0].concat(" AND #{sql_frag}")
-                when scoped_options[:conditions].is_a?(String) then scoped_options[:conditions].concat(" AND #{sql_frag}")
-              end
+              filter_conditions << sql
             end
           end if filters.is_a?(Hash)
 
@@ -118,6 +111,11 @@ module Statistics
           if (conditions = sql_options(scoped_options)[:conditions]).present?
             stat_value = stat_value.where(conditions)
           end
+          if filter_conditions.present?
+            filter_conditions.each do |condition|
+              stat_value = stat_value.where(condition)
+            end
+          end
           stat_value
         end
 
@@ -128,8 +126,7 @@ module Statistics
           cached_val = Rails.cache.read(cache_key) if cache_for
           return cached_val unless cached_val.nil?
 
-          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins)))
-          column_name = scoped_options[:column_name]
+          column_name = options[:column_name]
           stat_value = send("#{stat_name}_query", filters).send(calculation, column_name)
           # cache stat value
           if cache_for
