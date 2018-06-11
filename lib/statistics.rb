@@ -83,6 +83,8 @@ module Statistics
             sql = { key.to_sym => value }
           elsif base_query == :day_range
             sql = { key.to_sym => value.beginning_of_day..value.end_of_day }
+          elsif base_query.is_a?(Array)
+            sql = build_sql_frag(base_query[0], value, base_query[1])
           else
             sql = base_query.gsub("?", "'#{value}'")
             sql = sql.gsub("%t", "#{table_name}")
