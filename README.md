@@ -68,13 +68,19 @@ filter_on: { :account_type => :default, :created_at => :default }
 
 Account.get_stat(:user_count, :account_type => 'non-admin', created_at: Time.now.all_week)
 
-    b. Customise SQL
+    b. Day Range SQL query builder:
+
+filter_on: { :account_type => :default, :created_at => :day_range }
+
+Account.get_stat(:user_count, :account_type => 'non-admin', created_at: Date.current)
+
+    c. Customise SQL
 
 filter_on: { :account_type => 'account_type = ?' }
 
 Account.get_stat(:user_count,  :account_type => 'non-admin')
 
-    c. Range
+    d. Range
 
 You will be no able to use named filters:
 

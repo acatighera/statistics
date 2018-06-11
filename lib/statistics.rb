@@ -88,6 +88,8 @@ module Statistics
                 sql = { value.to_sym => range }
               elsif base_query == :default
                 sql = { key.to_sym => value }
+              elsif base_query == :day_range
+                sql = { key.to_sym => value.beginning_of_day..value.end_of_day }
               else
                 sql = base_query.gsub("?", "'#{value}'")
                 sql = sql.gsub("%t", "#{table_name}")

@@ -30,6 +30,7 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
     define_statistic "Default Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :default }
+    define_statistic "Day Range Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :day_range }
     define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
     define_statistic "Dynamic Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => lambda { |filter_on| filter_on[:channel] == "chan5" ? 5.minutes : 0.seconds }
 
@@ -59,6 +60,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
     MockModel.expects(:default_sql_filter_stat).returns(3)
+    MockModel.expects(:day_range_sql_filter_stat).returns(3)
     MockModel.expects(:cached_stat).returns(9)
     MockModel.expects(:dynamic_cached_stat).returns(7)
     MockModel.expects(:total_amount_stat).returns(54)
@@ -70,6 +72,7 @@ class StatisticsTest < Test::Unit::TestCase
      "Default Filter",
      "Custom Filter",
      "Default Sql Filter",
+     "Day Range Sql Filter",
      "Cached",
      "Dynamic Cached",
      "Total Amount"].each do |key|
@@ -83,6 +86,7 @@ class StatisticsTest < Test::Unit::TestCase
                     "Default Filter" => 5,
                     "Custom Filter" => 3,
                     "Default Sql Filter" => 3,
+                    "Day Range Sql Filter" => 3,
                     "Cached" => 9,
                     "Dynamic Cached" => 7,
                     "Total Amount" => 54 }, MockModel.statistics)
@@ -138,6 +142,15 @@ class StatisticsTest < Test::Unit::TestCase
     assert_equal 2, MockModel.default_filter_stat( :user_id => '12345' )
   end
 
+  def test_day_range_filter_stat
+    MockModel.expects(:count).with(:id).returns(8)
+    assert_equal 8, MockModel.default_filter_stat({})
+
+    object = stub.tap { |obj| obj.stubs(:count).with(:id).returns(2) }
+    MockModel.expects(:where).with("user_id = '12345'").returns(object)
+    assert_equal 2, MockModel.default_filter_stat( :user_id => '12345' )
+  end
+
   def test_custom_filter_stat
     MockModel.expects(:count).with(:id).returns(6)
     assert_equal 6, MockModel.custom_filter_stat({})
@@ -161,7 +174,12 @@ class StatisticsTest < Test::Unit::TestCase
   def test_default_sql_builder
     query = MockModel.stat_collection("Default Sql Filter", channel: "5", created_at: Time.now.all_week).to_sql
     assert query.include?('"channel" = \'5\'')
-    assert query.include?("BETWEEN")
+    assert query.include?("\"created_at\" BETWEEN '#{Time.now.beginning_of_week.strftime('%Y-%m-%d %H:%M:%S.%6N')}' AND '#{Time.now.end_of_week.strftime('%Y-%m-%d %H:%M:%S.%6N')}'")
+  end
+
+  def test_day_range_sql_builder
+    query = MockModel.stat_collection("Day Range Sql Filter", channel: "5", created_at: Time.now.to_date).to_sql
+    assert query.include?("\"created_at\" BETWEEN '#{Time.now.beginning_of_day.strftime('%Y-%m-%d %H:%M:%S.%6N')}' AND '#{Time.now.end_of_day.strftime('%Y-%m-%d %H:%M:%S.%6N')}'")
   end
 
   def test_cached_stat
