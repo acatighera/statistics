@@ -117,9 +117,17 @@ module Statistics
             joins_opt = joins_opt.is_a?(Proc) ? joins_opt.call(filters) : joins_opt
             stat_value = stat_value.joins(joins_opt)
           end
+
           if (conditions = sql_options(scoped_options)[:conditions]).present?
-            stat_value = stat_value.where(conditions)
+            if conditions.is_a?(Array)
+              conditions.each do |condition|
+                stat_value = stat_value.where(condition)
+              end
+            else
+              stat_value = stat_value.where(conditions)
+            end
           end
+
           if filter_conditions.present?
             filter_conditions.each do |condition|
               stat_value = stat_value.where(condition)

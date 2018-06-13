@@ -29,6 +29,12 @@ class StatisticsTest < Test::Unit::TestCase
     define_statistic "Chained Scope Count", :count => [:all, :named_scope]
     define_statistic "Default Filter", :count => :all
     define_statistic "Custom Filter", :count => :all, :filter_on => { :channel => 'channel = ?', :start_date => 'DATE(created_at) > ?', :blah => 'blah = ?' }
+    define_statistic "Array Condition Sql",
+      count: :all,
+      conditions: [
+        {channel: 5},
+        {created_at: Time.now.all_week},
+      ]
     define_statistic "Default Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :default }
     define_statistic "Day Range Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :day_range }
     define_statistic "Indirect Filter", :count => :all, :filter_on => { :channel => :default, on: [:created_at, :day_range] }
@@ -58,6 +64,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:symbol_count_stat).returns(2)
     MockModel.expects(:basic_sum_stat).returns(27)
     MockModel.expects(:chained_scope_count_stat).returns(4)
+    MockModel.expects(:array_condition_sql_stat).returns(3)
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
     MockModel.expects(:default_sql_filter_stat).returns(3)
@@ -71,9 +78,10 @@ class StatisticsTest < Test::Unit::TestCase
      :symbol_count,
      "Basic Sum",
      "Chained Scope Count",
+     "Array Condition Sql",
+     "Default Sql Filter",
      "Default Filter",
      "Custom Filter",
-     "Default Sql Filter",
      "Day Range Sql Filter",
      "Indirect Filter",
      "Cached",
@@ -86,6 +94,7 @@ class StatisticsTest < Test::Unit::TestCase
                     :symbol_count => 2,
                     "Basic Sum" => 27,
                     "Chained Scope Count" => 4,
+                    "Array Condition Sql" => 3,
                     "Default Filter" => 5,
                     "Custom Filter" => 3,
                     "Default Sql Filter" => 3,
@@ -135,6 +144,12 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:basic_sum_stat).with(:user_id => 6).returns(60)
 
     assert_equal 180, MockModel.total_amount_stat({:user_id => 6})
+  end
+
+  def test_array_condition_sql_stat
+    query = MockModel.stat_collection("Array Condition Sql").to_sql
+    assert query.include?('"channel" = 5')
+    assert query.include?("\"created_at\" BETWEEN '#{Time.now.beginning_of_week.strftime('%Y-%m-%d %H:%M:%S.%6N')}' AND '#{Time.now.end_of_week.strftime('%Y-%m-%d %H:%M:%S.%6N')}'")
   end
 
   def test_default_filter_stat
