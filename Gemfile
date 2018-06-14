@@ -8,6 +8,7 @@ group :test do
   gem "sqlite3", "~> 1.3.5"
   gem 'mocha', '~> 0.13.0'
   gem 'byebug'
+  gem 'jeweler'
   gem 'test-unit'
 end
 
