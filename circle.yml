@@ -1,0 +1,16 @@
+machine:
+  environment:
+    CIRCLE_ENV: test
+
+database:
+  pre:
+    - echo "database/pre section is skipped"
+  override:
+    - echo "database/override section is skipped"
+  post:
+    - echo "database/post section is skipped"
+
+test:
+  override:
+    - bundle exec ruby test/statistics_test.rb
+
