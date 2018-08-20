@@ -36,6 +36,13 @@ class StatisticsTest < Test::Unit::TestCase
         {created_at: Time.now.all_week},
       ]
     define_statistic "Default Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :default }
+    define_statistic "Filter In Conditions", :count => :all,
+      conditions: [
+        proc { |filter_on|
+          (filter_on[:channel] && filter_on[:channel] > 10) ? "amount > 0" : "amount < 0"
+        }
+      ],
+      filter_on: { :channel => :default, :created_at => :default }
     define_statistic "Day Range Sql Filter", :count => :all, :filter_on => { :channel => :default, :created_at => :day_range }
     define_statistic "Indirect Filter", :count => :all, :filter_on => { :channel => :default, on: [:created_at, :day_range] }
     define_statistic "Cached", :count => :all, :filter_on => { :channel => 'channel = ?', :blah => 'blah = ?' }, :cache_for => 1.second
@@ -68,6 +75,7 @@ class StatisticsTest < Test::Unit::TestCase
     MockModel.expects(:default_filter_stat).returns(5)
     MockModel.expects(:custom_filter_stat).returns(3)
     MockModel.expects(:default_sql_filter_stat).returns(3)
+    MockModel.expects(:filter_in_conditions_stat).returns(7)
     MockModel.expects(:day_range_sql_filter_stat).returns(3)
     MockModel.expects(:indirect_filter_stat).returns(3)
     MockModel.expects(:cached_stat).returns(9)
@@ -80,6 +88,7 @@ class StatisticsTest < Test::Unit::TestCase
      "Chained Scope Count",
      "Array Condition Sql",
      "Default Sql Filter",
+     "Filter In Conditions",
      "Default Filter",
      "Custom Filter",
      "Day Range Sql Filter",
@@ -98,6 +107,7 @@ class StatisticsTest < Test::Unit::TestCase
                     "Default Filter" => 5,
                     "Custom Filter" => 3,
                     "Default Sql Filter" => 3,
+                    "Filter In Conditions" => 7,
                     "Day Range Sql Filter" => 3,
                     "Indirect Filter" => 3,
                     "Cached" => 9,
@@ -194,6 +204,15 @@ class StatisticsTest < Test::Unit::TestCase
     query = MockModel.stat_collection("Default Sql Filter", channel: "5", created_at: Time.now.all_week).to_sql
     assert query.include?('"channel" = \'5\'')
     assert query.include?("\"created_at\" BETWEEN '#{Time.now.beginning_of_week.strftime('%Y-%m-%d %H:%M:%S.%6N')}' AND '#{Time.now.end_of_week.strftime('%Y-%m-%d %H:%M:%S.%6N')}'")
+  end
+
+  def test_filter_in_conditions_stat_collection
+    MockModel.create(channel: 12, amount: 10)
+    MockModel.create(channel: 12, amount: 9)
+    MockModel.create(channel: 12, amount: -1)
+    MockModel.create(channel: 3, amount: 1)
+
+    assert_equal 2, MockModel.get_stat("Filter In Conditions", {:channel => 12})
   end
 
   def test_day_range_sql_builder

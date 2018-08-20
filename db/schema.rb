@@ -18,6 +18,7 @@ ActiveRecord::Schema.define(version: 20171116231537) do
 
   create_table "mock_models", force: :cascade do |t|
     t.string :channel
+    t.integer :amount
     t.timestamps
   end
 end

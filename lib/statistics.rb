@@ -93,7 +93,7 @@ module Statistics
         end
 
         define_method("#{stat_name}_query") do |filters|
-          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins)))
+          scoped_options = Marshal.load(Marshal.dump(options.except(:cache_for, :joins, :conditions)))
 
           filter_conditions = []
           filters.each do |key, value|
@@ -118,10 +118,12 @@ module Statistics
             stat_value = stat_value.joins(joins_opt)
           end
 
-          if (conditions = sql_options(scoped_options)[:conditions]).present?
+          if (conditions = options[:conditions]).present?
             if conditions.is_a?(Array)
               conditions.each do |condition|
-                stat_value = stat_value.where(condition)
+                query = condition.is_a?(Proc) ? condition.call(filters) : condition
+                query = Marshal.load(Marshal.dump(query))
+                stat_value = stat_value.where(query)
               end
             else
               stat_value = stat_value.where(conditions)
