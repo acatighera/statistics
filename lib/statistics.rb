@@ -121,6 +121,7 @@ module Statistics
           if (conditions = options[:conditions]).present?
             if conditions.is_a?(Array)
               conditions.each do |condition|
+                next unless condition
                 query = condition.is_a?(Proc) ? condition.call(filters) : condition
                 query = Marshal.load(Marshal.dump(query))
                 stat_value = stat_value.where(query)
