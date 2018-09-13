@@ -83,6 +83,10 @@ module Statistics
             sql = { key.to_sym => value }
           elsif base_query == :day_range
             sql = { key.to_sym => value.beginning_of_day..value.end_of_day }
+          elsif base_query == :week_range
+            sql = { key.to_sym => value.beginning_of_day..value.end_of_day }
+          elsif base_query == :month_range
+            sql = { key.to_sym => value.beginning_of_month..value.end_of_month }
           elsif base_query.is_a?(Array)
             sql = build_sql_frag(base_query[0], value, base_query[1])
           else
