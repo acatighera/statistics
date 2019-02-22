@@ -12,11 +12,27 @@ modification:
 
 ## Installation
     gem install statistics
-OR
-    script/plugin install git://github.com/tam-vo/statistics.git
 
 ## Run tests
     bundle exec ruby test/statistics_test.rb
+
+## Usage: retrieve statistics value
+
+Get statistics value (use cache value if available)
+
+    Account.get_stat(:user_count)
+
+Get statistics value force to recalculate (bypass cache)
+
+    Account.get_stat!(:user_count)
+
+Get collection from statistics query
+
+    Account.stat_collection(:user_count)
+
+Get SQL query from statistics query
+
+    Account.stat_collection(:user_count).to_sql
 
 ## Examples
 #### Defining statistics is similar to defining named scopes. Strings and symbols both work as names.
@@ -33,11 +49,11 @@ OR
 
 #### Actually pulling the numbers is simple:
 
-#####for all stats
+##### for all stats
 
     Account.statistics                   # returns { :user_count => 120, :average_age => 28, 'subscriber count' => 74 }
 
-#####for a single stat
+##### for a single stat
 
     Account.get_stat(:user_count)      # returns 120
 
